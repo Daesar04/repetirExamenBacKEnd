@@ -5,7 +5,7 @@ import { getUsersByName } from "./resolvers.ts";
 // Connection URL
 const url = Deno.env.get("MONGO_URL");
 
-else if(!url)
+if(!url)
 {
   console.log("no se ha podido conectar a la url");
   Deno.exit(1);
