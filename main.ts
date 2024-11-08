@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb'
 import { UserModel } from "./types.ts";
-import { getUsersByName, getAllUsers } from "./resolvers.ts";
+import { getUsersByName, getAllUsers,getUsersByEmail } from "./resolvers.ts";
 
 // Connection URL
 const url = Deno.env.get("MONGO_URL");
@@ -37,6 +37,12 @@ const handler = async (
 
       if(nombre) return await getUsersByName(nombre, userCollection);
       return await getAllUsers(userCollection);
+    }
+    else if(path === "/persona")
+    {
+      const email = url.searchParams.get("email");
+
+      if(email) return await getUsersByEmail(email, userCollection);
     }
   }
   else if(method === "POST")

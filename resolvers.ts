@@ -75,3 +75,30 @@ export const getAllUsers = async(
     }
     return new Response(JSON.stringify(usuarios), { status: 200 });
 };
+
+export const getUsersByEmail = async (
+    email: string,
+    usersCollection: Collection<UserModel>
+): Promise<Response>  => {
+    const filteredDocs = await usersCollection.find({ email: email }).toArray();
+    const usuariosEmail: User[] = [];
+
+    if(filteredDocs && filteredDocs.length > 0)
+    {
+        await Promise.all(filteredDocs.map(async (elem: UserModel) => (
+            usuariosEmail.push({
+                id: elem._id.toString(),
+                nombre: elem.nombre,
+                email: elem.email,
+                telefono: elem.telefono,
+                amigos: await getAmigosFromUser(elem.amigos, usersCollection)
+            })
+        )));
+    }
+    else
+    {
+        return new Response("Persona no encontrada.", { status: 404 });
+    }
+
+    return new Response(JSON.stringify(usuariosEmail), { status: 200 });
+};
