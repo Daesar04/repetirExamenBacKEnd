@@ -102,3 +102,39 @@ export const getUsersByEmail = async (
 
     return new Response(JSON.stringify(usuariosEmail), { status: 200 });
 };
+
+export const modificarUser = async (
+    body: Partial<User>,
+    usersCollection: Collection<UserModel>
+): Promise<Response> => {
+    const userModificado: Partial<UserModel> = {};
+
+    const filteredDocs = await usersCollection.findOne({ telefono: body.telefono });
+    if(filteredDocs) return new Response("No puede usar ese telefono ya pertenece a otro user", { status: 404 });
+
+    if(body.nombre) userModificado.nombre = body.nombre;
+    if(body.telefono) userModificado.telefono = body.telefono;
+    if(body.amigos) userModificado.amigos = body.amigos;
+
+    const { modifiedCount } = await usersCollection.updateOne({ email: body.email }, { $set: { ...userModificado } });
+
+    if(modifiedCount === 0) return new Response("Usuario no encontrado.", { status: 404 });
+    return new Response("OK", { status: 200 }); //MODIFICAR
+};
+
+export const borrarUser = async (
+    correo: string,
+    usersCollection: Collection<UserModel>
+): Promise<Response> => {
+
+    const { deletedCount } = await usersCollection.deleteOne({ email: correo });
+    
+    if(deletedCount)
+    {
+        const filteredDocs = await usersCollection.findOne({ email: correo });
+        if(filteredDocs)
+            await usersCollection.updateMany({ email: correo }, { $pull: { amigos: new ObjectId(filteredDocs._id) } }); // NO HE SABIDO HACER ESTO
+        return new Response("Persona eliminada exitosamente.", { status: 200 });
+    }
+    return new Response("Usuario no encontrado.", { status: 404 });
+};
