@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb'
 import { UserModel } from "./types.ts";
-import { getUsersByName, getAllUsers,getUsersByEmail, modificarUser, borrarUser } from "./resolvers.ts";
+import { getUsersByName, getAllUsers, getUsersByEmail, modificarUser, borrarUser, añadirAmigo } from "./resolvers.ts";
 
 // Connection URL
 const url = Deno.env.get("MONGO_URL");
@@ -40,9 +40,9 @@ const handler = async (
     }
     else if(path === "/persona")
     {
-      const email = url.searchParams.get("email");
+      const correo = url.searchParams.get("correo");
 
-      if(email) return await getUsersByEmail(email, userCollection);
+      if(correo) return await getUsersByEmail(correo, userCollection);
     }
   }
   else if(method === "POST")
@@ -58,8 +58,15 @@ const handler = async (
     {
       const body = await req.json();
 
-      if(!body.email || !(body.nombre || body.telefono || body.amigos)) return new Response("Faltan datos.", { status: 400 });
+      if(!body.correo || !(body.nombre || body.telefono || body.amigos)) return new Response("Faltan datos.", { status: 400 });
       return await modificarUser(body, userCollection);
+    }
+    if(path === "/personas/amigo")
+    {
+      const body = await req.json();
+
+      if(!body.correo && !body.amigos) return new Response("Faltan datos.", { status: 400 });
+      return await añadirAmigo(body, userCollection);
     }
   }
   else if(method === "DELETE")
@@ -68,7 +75,7 @@ const handler = async (
     {
       const body = await req.json();
 
-      if(!body.email) return new Response("Falta email.", { status: 400 });
+      if(!body.correo) return new Response("Falta correo.", { status: 400 });
       return await borrarUser(body, userCollection);
     }
   }

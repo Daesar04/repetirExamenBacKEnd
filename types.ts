@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb'
 export type UserModel = {
     _id: ObjectId,
     nombre: string,
-    email: string,
+    correo: string,
     telefono: string,
     amigos: ObjectId[]
 };
@@ -11,7 +11,7 @@ export type UserModel = {
 export type User = {
     id: string,
     nombre: string,
-    email: string,
+    correo: string,
     telefono: string,
     amigos: Amigos[]
 };
@@ -19,6 +19,6 @@ export type User = {
 export type Amigos = {
     id: string,
     nombre: string,
-    email: string,
+    correo: string,
     telefono: string
 };

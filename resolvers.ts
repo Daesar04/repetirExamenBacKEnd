@@ -15,7 +15,7 @@ export const getAmigosFromUser = async (
             amigosDeUsuario.push({
                 id: elem._id.toString(),
                 nombre: elem.nombre,
-                email: elem.email,
+                correo: elem.correo,
                 telefono: elem.telefono
             })
         )));
@@ -36,7 +36,7 @@ export const getUsersByName = async(
             usuariosNombre.push({
                 id: elem._id.toString(),
                 nombre: elem.nombre,
-                email: elem.email,
+                correo: elem.correo,
                 telefono: elem.telefono,
                 amigos: await getAmigosFromUser(elem.amigos, usersCollection)
             })
@@ -63,7 +63,7 @@ export const getAllUsers = async(
             usuarios.push({
                 id: elem._id.toString(),
                 nombre: elem.nombre,
-                email: elem.email,
+                correo: elem.correo,
                 telefono: elem.telefono,
                 amigos: await getAmigosFromUser(elem.amigos, usersCollection)
             })
@@ -80,7 +80,7 @@ export const getUsersByEmail = async (
     email: string,
     usersCollection: Collection<UserModel>
 ): Promise<Response>  => {
-    const filteredDocs = await usersCollection.find({ email: email }).toArray();
+    const filteredDocs = await usersCollection.find({ correo: email }).toArray();
     const usuariosEmail: User[] = [];
 
     if(filteredDocs && filteredDocs.length > 0)
@@ -89,7 +89,7 @@ export const getUsersByEmail = async (
             usuariosEmail.push({
                 id: elem._id.toString(),
                 nombre: elem.nombre,
-                email: elem.email,
+                correo: elem.correo,
                 telefono: elem.telefono,
                 amigos: await getAmigosFromUser(elem.amigos, usersCollection)
             })
@@ -116,25 +116,55 @@ export const modificarUser = async (
     if(body.telefono) userModificado.telefono = body.telefono;
     if(body.amigos) userModificado.amigos = body.amigos;
 
-    const { modifiedCount } = await usersCollection.updateOne({ email: body.email }, { $set: { ...userModificado } });
+    const { modifiedCount } = await usersCollection.updateOne({ correo: body.correo }, { $set: { ...userModificado } });
 
     if(modifiedCount === 0) return new Response("Usuario no encontrado.", { status: 404 });
     return new Response("OK", { status: 200 }); //MODIFICAR
 };
 
 export const borrarUser = async (
-    correo: string,
+    correo: User,
     usersCollection: Collection<UserModel>
 ): Promise<Response> => {
-
-    const { deletedCount } = await usersCollection.deleteOne({ email: correo });
+    console.log(correo);
+    const { deletedCount } = await usersCollection.deleteOne({ correo: correo.correo });
     
     if(deletedCount)
     {
-        const filteredDocs = await usersCollection.findOne({ email: correo });
+        const filteredDocs = await usersCollection.findOne({ correo: correo });
         if(filteredDocs)
-            await usersCollection.updateMany({ email: correo }, { $pull: { amigos: new ObjectId(filteredDocs._id) } }); // NO HE SABIDO HACER ESTO
+            await usersCollection.updateMany({ _id: new ObjectId(filteredDocs._id) }, { $pull: { amigos: new ObjectId(filteredDocs._id) } }); 
+        // NO HE SABIDO HACER ESTO Y NO FUNCIONA BIEN
         return new Response("Persona eliminada exitosamente.", { status: 200 });
     }
     return new Response("Usuario no encontrado.", { status: 404 });
+};
+
+/*export const añadirAmigo = async (
+    correo: string,
+    idAmigo: string[],
+    usersCollection: Collection<UserModel>
+): Promise<Response> => {
+    const idsAmigos: ObjectId[] = Array(idAmigo.map(elem => new ObjectId(elem)));
+
+    const filteredDocs = await usersCollection.findOne({ _id: { $in: idsAmigos } });
+    const { modifiedCount } = await usersCollection.updateOne({ email: correo }, { $addToSet: { amigos: { $each: idsAmigos } } });
+
+    if(!filteredDocs) return new Response("Amigo no encontrado.", { status: 404 });
+    if(modifiedCount === 0) return new Response("Usuario no encontrado.", { status: 404 });
+    return new Response("OK", { status: 200 }); //MODIFICAR
+};*/
+
+export const añadirAmigo = async (
+    body: User,
+    usersCollection: Collection<UserModel>
+): Promise<Response> => {
+    const idsAmigos: ObjectId[] = body.amigos.map(elem => new ObjectId(elem));
+    const filteredDocs = await usersCollection.findOne({ _id: {$in: idsAmigos} });
+    if(!filteredDocs) return new Response("Amigo no encontrado.", { status: 404 });
+    
+    const { modifiedCount } = await usersCollection.updateOne({ correo: body.correo }, { $addToSet: { amigos: { $each: idsAmigos } } });
+
+    if(!modifiedCount) return new Response("Usuario no encontrado.", { status: 404 });
+    return new Response("OK", { status: 200 }); //MODIFICAR
 };
