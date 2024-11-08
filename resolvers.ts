@@ -6,7 +6,7 @@ export const getAmigosFromUser = async (
     usersCollection: Collection<UserModel>
 ): Promise<Amigos[]> => {
     const filteredDocs = await usersCollection.find({ _id: { $in: amigosUser } }).toArray();
-
+    console.log(filteredDocs)
     const amigosDeUsuario: Amigos[] = [];
 
     if(filteredDocs && filteredDocs.length > 0)
@@ -28,8 +28,8 @@ export const getUsersByName = async(
     usersCollection: Collection<UserModel>
 ): Promise<Response>  => {
     const filteredDocs = await usersCollection.find({ nombre: name }).toArray();
+    
     const usuariosNombre: User[] = [];
-
     if(filteredDocs && filteredDocs.length > 0)
     {
         await Promise.all(filteredDocs.map(async (elem: UserModel) => (
@@ -126,7 +126,6 @@ export const borrarUser = async (
     correo: User,
     usersCollection: Collection<UserModel>
 ): Promise<Response> => {
-    console.log(correo);
     const { deletedCount } = await usersCollection.deleteOne({ correo: correo.correo });
     
     if(deletedCount)
@@ -167,4 +166,38 @@ export const añadirAmigo = async (
 
     if(!modifiedCount) return new Response("Usuario no encontrado.", { status: 404 });
     return new Response("OK", { status: 200 }); //MODIFICAR
+};
+
+export const addUser = async (
+    body: User,
+    usersCollection: Collection<UserModel>
+): Promise<Response> => {
+    const filteredTlf = await usersCollection.findOne({ telefono: body.telefono });
+    const filteredDocs = await usersCollection.findOne({ correo: body.correo });
+
+    if(filteredDocs || filteredTlf) return new Response("El email o teléfono ya están registrados.", { status: 404 });
+
+    const IDsAmigos:ObjectId[] = body.amigos.map(elem => new ObjectId(elem));
+
+    const nuevoUser: UserModel = {
+        _id: new ObjectId(),
+        nombre: body.nombre,
+        correo: body.correo,
+        telefono: body.telefono,
+        amigos: IDsAmigos
+    }
+
+    const { insertedId } = await usersCollection.insertOne(nuevoUser);
+
+    if(insertedId)
+    {
+        return new Response(JSON.stringify({
+            id: nuevoUser._id.toString(),
+            nombre: nuevoUser.nombre,
+            correo: nuevoUser.correo,
+            telefono: nuevoUser.telefono,
+            amigos: await getAmigosFromUser(nuevoUser.amigos, usersCollection)
+        }), { status: 200 });
+    }
+    return new Response("No se ha podido añadir el usuario", { status: 404 });
 };
